@@ -1,11 +1,20 @@
-import { css } from 'emotion'
 import * as React from 'react';
+import styled, { css } from 'react-emotion'
 import './App.css';
+import Task from './components/Task'
 import logo from './logo.svg';
 
 const myclass = css`
   color: hotpink;
   font-size: 1.5em;
+`
+
+const Code = styled('code')`
+  color: aquamarine;
+`;
+
+const doesit = css`
+  color: green;
 `
 
 class App extends React.Component {
@@ -17,8 +26,13 @@ class App extends React.Component {
           <h1 className={myclass}>Welcome to React</h1>
         </header>
         <p className="App-intro">
-          To get started, edit <code>src/App.tsx</code> and save to reload.
+          To get started, edit <Code>src/App.tsx</Code> and save to reload.
         </p>
+        <div>
+          <Task className={doesit} color="red"/>
+          <Task color="red"/>
+          <Task />
+        </div>
       </div>
     );
   }
