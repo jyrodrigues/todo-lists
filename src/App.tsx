@@ -1,7 +1,6 @@
 import * as React from 'react';
 import styled, { css, injectGlobal, keyframes } from 'react-emotion';
 import ListFrame from './components/ListFrame';
-import Task from './components/Task';
 import todoIcon from './images/Accomplish-icon.png';
 
 const myclass = css`
@@ -9,9 +8,9 @@ const myclass = css`
   font-size: 1.5em;
 `;
 
-const doesit = css`
-  color: green;
-`;
+// const doesit = css`
+//   color: green;
+// `;
 
 // NEW
 
@@ -60,6 +59,13 @@ const AppBody = styled('div')`
 // END NEW
 
 
+function genTasks(n: number) {
+  const tasks = [];
+  for(let i = 0; i < n; i++) {
+    tasks.push({ done: false, title: `Task ${i} means we have to do ${i} things.`});
+  }
+  return tasks;
+}
 
 class App extends React.Component {
   public render() {
@@ -70,11 +76,7 @@ class App extends React.Component {
           <h1 className={myclass}>A list</h1>
         </header>
         <AppBody>
-          <ListFrame>
-            <Task className={doesit} color="red"/>
-            <Task color="red"/>
-            <Task />
-          </ListFrame>
+          <ListFrame tasks={genTasks(4)}/>
         </AppBody>
       </div>
     );
