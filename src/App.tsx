@@ -1,18 +1,18 @@
 import * as React from 'react';
 import styled, { css, injectGlobal, keyframes } from 'react-emotion';
-import ListFrame from './components/ListFrame';
+import { taskData } from './components/Task';
+import TaskList from './components/TaskList';
 import todoIcon from './images/Accomplish-icon.png';
+
+
+
+/* STYLES */
+
 
 const myclass = css`
   color: hotpink;
   font-size: 1.5em;
 `;
-
-// const doesit = css`
-//   color: green;
-// `;
-
-// NEW
 
 /* tslint:disable */
 injectGlobal`
@@ -56,31 +56,38 @@ const AppBody = styled('div')`
   align-items: center; /* For vertical alignment */
 `;
 
-// END NEW
 
 
-function genTasks(n: number) {
-  const tasks = [];
-  for(let i = 0; i < n; i++) {
-    tasks.push({ done: false, title: `Task ${i} means we have to do ${i} things.`});
-  }
-  return tasks;
+/* AUX FUNCTIONS */
+
+
+function genTasks(n: number): taskData[] {
+    const tasks = [];
+    for (let i = 0; i < n; i++) {
+        tasks.push({ done: false, title: `Task ${i} means we have to do ${i} things.` });
+    }
+    return tasks;
 }
 
+
+
+/* COMPONENT */
+
+
 class App extends React.Component {
-  public render() {
-    return (
-      <div className={appStyle}>
-        <header className={header}>
-          <img src={todoIcon} className={iconStyle} alt="logo" />
-          <h1 className={myclass}>A list</h1>
-        </header>
-        <AppBody>
-          <ListFrame tasks={genTasks(4)}/>
-        </AppBody>
-      </div>
-    );
-  }
+    public render() {
+        return (
+            <div className={appStyle}>
+                <header className={header}>
+                    <img src={todoIcon} className={iconStyle} alt="logo" />
+                    <h1 className={myclass}>A list</h1>
+                </header>
+                <AppBody>
+                    <TaskList tasks={genTasks(4)} />
+                </AppBody>
+            </div>
+        );
+    }
 }
 
 export default App;
