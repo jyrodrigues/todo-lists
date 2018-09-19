@@ -1,6 +1,6 @@
 import * as React from 'react';
 import styled, { css, injectGlobal, keyframes } from 'react-emotion';
-import { taskData } from './components/Task';
+import { TaskData } from './components/Task';
 import TaskList from './components/TaskList';
 import todoIcon from './images/Accomplish-icon.png';
 
@@ -61,10 +61,15 @@ const AppBody = styled('div')`
 /* AUX FUNCTIONS */
 
 
-function genTasks(n: number): taskData[] {
+function genTasks(n: number): TaskData[] {
     const tasks = [];
     for (let i = 0; i < n; i++) {
-        tasks.push({ done: false, title: `Task ${i} means we have to do ${i} things.` });
+        const key = i;
+        tasks.push({
+          done: false,
+          title: `Task ${i} means we have to do ${i} things.`,
+          key,
+        });
     }
     return tasks;
 }

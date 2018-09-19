@@ -1,7 +1,26 @@
 import * as React from 'react';
 import { css } from 'react-emotion';
 import binder from '../binder';
-import Task, { taskCallbacks } from './Task';
+import Task, { TaskCallbacks, TaskData, TaskProps } from './Task';
+
+
+
+/* TYPES */
+
+
+type TaskListProps = {
+    tasks: TaskData[],
+};
+
+
+type TaskListState = {
+    tasks: TaskData[],
+    nextAvailableKey: number,
+};
+
+
+
+/* STYLES */
 
 
 const mystyle = css`
@@ -13,37 +32,71 @@ const mystyle = css`
     overflow: scroll;
 `;
 
-class TaskList extends React.Component<any, any> {
+
+
+/* COMPONENT */
+
+
+class TaskList extends React.Component<TaskListProps, TaskListState> {
     public constructor(props: any) {
         super(props);
         this.state = {
-        tasks: this.props.tasks || []
+            tasks: this.props.tasks || [],
+            nextAvailableKey: this.props.tasks.length,
         }
 
         binder(this);
     }
 
-    public cbs : taskCallbacks = {
-        cb1: () => 3,
-        cb2: (e: any) => 4
+    public taskCallbacks(taskKey : number) : TaskCallbacks {
+        return {
+            onChangeStatus: _ => {
+                const tasks = this.state.tasks.slice();
+                const taskIndex = tasks.findIndex(task => task.key === taskKey);
+                tasks[taskIndex].done = !tasks[taskIndex].done;
+                this.setState({ tasks });
+            },
+
+            // TODO make title a component's responsability ?
+            onChangeTitle: e => {
+                const tasks = this.state.tasks.slice();
+                const taskIndex = tasks.findIndex(task => task.key === taskKey);
+                tasks[taskIndex].title = e.currentTarget.value;
+                this.setState({ tasks });
+            },
+
+            onDelete: _ => {
+                const tasks = this.state.tasks.filter(task => task.key !== taskKey);
+                this.setState({ tasks });
+            }
+        };
     }
 
-    public handleTaskChange(i : number) {
-        return () => {
-            const tasks = this.state.tasks.slice();
-            tasks[i].done = !tasks[i].done;
-            this.setState({
-                tasks
-            });
-        }
+    public addRandomTask() : void {
+        const newTask = {
+            title: "Random data",
+            done: false,
+            key: this.state.nextAvailableKey,
+        };
+
+        const tasks = this.state.tasks.slice();
+        tasks.push(newTask);
+        this.setState({
+            tasks,
+            nextAvailableKey: this.state.nextAvailableKey + 1,
+        });
     }
 
     public render() {
         return (
-            <div className={mystyle}>
-                {this.state.tasks.map((task : any, i : number) => 
-                    <Task key={task.title} done={task.done} title={task.title} onChange={this.handleTaskChange(i)} {...this.cbs} />
-                )}
+            <div>
+                <div className={mystyle}>
+                    {this.state.tasks.map((task : TaskData) => {
+                        const taskProps : TaskProps = {...task, ...this.taskCallbacks(task.key)};
+                        return <Task {...taskProps} />;
+                    })}
+                </div>
+                <button onClick={this.addRandomTask}>Add Random Task! :)</button>
             </div>
         )
     }

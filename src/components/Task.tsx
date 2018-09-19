@@ -1,3 +1,4 @@
+import { StyledOtherComponent } from 'create-emotion-styled';
 import * as React from 'react';
 import styled, { css } from 'react-emotion';
 
@@ -6,30 +7,34 @@ import styled, { css } from 'react-emotion';
 /* TYPES */
 
 
-export type taskData = {
+export type TaskData = {
     done: boolean,
-    title: string
+    title: string,
+    key: number,
 }
 
-export type taskProps
-    = taskData
-    & taskCallbacks
-    & {
-        onChange: () => void
-    };
-
-type stateType = any;
-
-export type taskCallbacks = {
-    cb1: () => number,
-    cb2: (e: any) => number
+export type TaskCallbacks = {
+    onChangeStatus: (e: React.FormEvent<HTMLInputElement>) => void,
+    onChangeTitle: (e: React.FormEvent<HTMLInputElement>) => void,
+    onDelete: (e: React.MouseEvent<HTMLButtonElement>) => void,
 }
+
+export type TaskProps
+    = TaskData
+    & TaskCallbacks;
+
+export type TaskState = {};
+
 
 
 /* STYLES */
 
 
-const TaskWrapper = styled('label')`
+const TaskWrapper : StyledOtherComponent<
+    TaskProps,
+    React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
+    any // := Theme
+> = styled('div')`
     display: block;
     margin: 3px;
     padding: 5px;
@@ -39,12 +44,12 @@ const TaskWrapper = styled('label')`
     user-select: none;
 
     &:hover {
-        background-color: ${(props : { done: boolean }) => props.done ? 'rgba(255,0,0,0.1);' : 'rgba(0,255,0,0.1);'}
+        background-color: ${(props : TaskProps) => props.done ? 'rgba(0,255,0,0.1);' : 'rgba(255,0,0,0.1);'}
         box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
     }
 `;
 
-const spanStyle = css`
+const titleStyle = css`
     padding: 5px;
 `;
 
@@ -53,18 +58,17 @@ const spanStyle = css`
 /* COMPONENT */
 
 
-class Task extends React.Component<taskProps, stateType> {
-    public constructor(props: taskProps) {
+class Task extends React.Component<TaskProps, TaskState> {
+    public constructor(props: TaskProps) {
         super(props);
     }
 
     public render() {
         return (
-            <TaskWrapper done={this.props.done} >
-                <input type="checkbox" onChange={this.props.onChange} defaultChecked={this.props.done}/>
-                <span className={spanStyle}>{this.props.title}</span>
-                <span>{this.props.cb1()}</span>
-                <span>{this.props.cb2(3)}</span>
+            <TaskWrapper {...this.props} >
+                <input type="checkbox" onChange={this.props.onChangeStatus} defaultChecked={this.props.done}/>
+                <input className={titleStyle} type="text" onChange={this.props.onChangeTitle} defaultValue={this.props.title}/>
+                <button onClick={this.props.onDelete}>Del</button>
             </TaskWrapper>
         );
     }
