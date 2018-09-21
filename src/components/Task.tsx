@@ -106,7 +106,7 @@ class Task extends React.Component<TaskProps, TaskState> {
     }
 
     public onDragStart(e : React.DragEvent<HTMLDivElement>) {
-        const data = JSON.stringify({ key: this.props.id });
+        const data = JSON.stringify({ id: this.props.id });
         e.dataTransfer.setData('text/plain', data);
         console.log(data);
     }

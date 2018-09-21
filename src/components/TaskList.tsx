@@ -8,26 +8,31 @@ import Task, { TaskCallbacks, TaskData, TaskProps } from './Task';
 /* TYPES */
 
 
-type TaskListProps = {
-    tasks: TaskData[],
+type TaskDataList = {
+    [group in TaskGroup] : TaskData[]
 };
 
+type TaskLocation = {
+    group : string,
+    index : number,
+};
+
+type TaskListProps = {
+    tasks: TaskDataList,
+}
+
+enum TaskGroup {
+    TODO = 'TODO',
+    DONE = 'DONE',
+}
 
 type TaskListState = {
     tasks: {
-        todo: TaskData[],
-        done: TaskData[],
+        [group in TaskGroup] : TaskData[]
     },
-    nextAvailableKey: number,
-    customTaskTitle: string,
-    selectedTasksToShow: TaskSelection,
+    nextAvailableId: number,
+    newTaskTitle: string,
 };
-
-enum TaskSelection {
-    All = "ALL",
-    Done = "DONE",
-    Todo = "TODO",
-}
 
 
 
@@ -43,12 +48,88 @@ const mystyle = css`
     overflow: scroll;
 `;
 
-const customTaskWrapperStyle = css`
+const newTaskWrapperStyle = css`
     margin: 20px;
     padding: 20px;
     border: solid 1px rgba(0,0,0,0.1);
     border-radius: 4px;
 `;
+
+
+
+/* TASKS SPECIFICS */
+// Enhance: put Task type and functions in a separate file
+// Enhance: make it a class?
+// Enhance: make group part of the task data?
+
+
+function createTask(title: string, done: boolean, id: number) {
+    const task : TaskData = {
+        title,
+        done,
+        id,
+        key: id,
+        editable: false,
+        selectAllTextOnEdit: true,
+    }
+
+    return task;
+};
+
+function tasksLength(tasks : TaskDataList) : number {
+    let length = 0;
+    for (let group in TaskGroup) {
+        length += tasks[group].length;
+    }
+    return length;
+}
+
+function copyTasks(givenTasks : TaskDataList) : TaskDataList {
+    // Enhance: is there a better way to initialize it?
+    let tasks : TaskDataList = {
+        DONE: [],
+        TODO: [],
+    };
+
+    for (let group in TaskGroup) {
+        tasks[group] = givenTasks[group].slice();
+    }
+
+    return tasks;
+}
+
+// Enhance: change string to TaskGroup
+// function insertTask(currentTasks : TaskDataList, newTask : TaskData, newTaskGroup : TaskGroup) : TaskDataList {
+function insertTask(currentTasks : TaskDataList, newTask : TaskData, newTaskGroup : string) : TaskDataList {
+    let tasks = copyTasks(currentTasks);
+    tasks[newTaskGroup] = [newTask].concat(tasks[newTaskGroup]);
+
+    return tasks;
+}
+
+function deleteTaskByLocation(currentTasks : TaskDataList, location : TaskLocation) : TaskDataList {
+    let tasks = copyTasks(currentTasks);
+    let group = tasks[location.group];
+    tasks[location.group] = group.splice(0, location.index).concat(group.splice(location.index + 1, group.length));
+
+    return tasks;
+}
+
+// Enhance: change string to TaskGroup
+// function findTaskById(tasks : TaskDataList, id: number) : ({ group : TaskGroup, index : number } | null) {
+function findTaskById(tasks : TaskDataList, id: number) : TaskLocation | null {
+    for (let group in TaskGroup) {
+        const index : number = tasks[group].findIndex((task : TaskData) => task.id === id);
+        if (index >= 0) {
+            return {
+                group,
+                index,
+            }
+        }
+    }
+    return null;
+}
+
 
 
 /* COMPONENT */
@@ -57,14 +138,11 @@ const customTaskWrapperStyle = css`
 class TaskList extends React.Component<TaskListProps, TaskListState> {
     public constructor(props: any) {
         super(props);
+
         this.state = {
-            tasks: {
-                todo: this.props.tasks || [],
-                done: [],
-            },
-            nextAvailableKey: this.props.tasks.length,
-            customTaskTitle: '',
-            selectedTasksToShow: TaskSelection.All,
+            tasks: this.props.tasks,
+            nextAvailableId: tasksLength(this.props.tasks),  // this.props.tasks.TODO.length + this.props.tasks.DONE.length + ...
+            newTaskTitle: '',
         }
 
         binder(this);
@@ -75,41 +153,61 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
     /* SUBCOMPONENTS CPI Callbacks */
 
 
-    public taskCallbacks(taskKey : number) : TaskCallbacks {
-        const changeTaskPropAndSetState = (key : number, transformTask : (task : TaskData) => void) => {
-            const todoTasks = this.state.tasks.todo.slice();
-            const taskIndex = todoTasks.findIndex(task => task.key === key);
-            transformTask(todoTasks[taskIndex]);
-            this.setState({ tasks: { todo: todoTasks, done: this.state.tasks.done } });
+    public taskCallbacks(taskId : number) : TaskCallbacks {
+        const changeTaskPropAndSetState = (id : number, transformTask : ((task : TaskData) => TaskData)) => {
+            const taskLocation : TaskLocation | null = findTaskById(this.state.tasks, id);
+
+            if (taskLocation === null) {
+                console.warn(`Callback called for a Task with id=${id}. But this id was not found on TaskList state!`);
+                return;
+            }
+
+            const tasks : TaskDataList = copyTasks(this.state.tasks);
+            tasks[taskLocation.group][taskLocation.index] = transformTask(tasks[taskLocation.group][taskLocation.index]);
+
+            this.setState({ tasks });
         }
 
         return {
             onChangeStatus: _ => {
-                changeTaskPropAndSetState(taskKey, task => task.done = !task.done)
+                changeTaskPropAndSetState(taskId, task => {
+                    task.done = !task.done
+                    return task;
+                })
             },
 
-            // TODO make title a component's responsability ?
+            // Enhance: make title a component's responsability ?
             onChangeTitle: e => {
-                changeTaskPropAndSetState(taskKey, task => {
+                changeTaskPropAndSetState(taskId, task => {
                     task.title = e.currentTarget.value;
                     task.selectAllTextOnEdit = false;
+                    return task;
                 })
             },
 
             onDelete: _ => {
-                const todoTasks = this.state.tasks.todo.filter(task => task.key !== taskKey);
-                this.setState({ tasks: { todo: todoTasks, done: this.state.tasks.done } });
+                const taskLocation = findTaskById(this.state.tasks, taskId);
+                if (taskLocation === null) {
+                    console.warn(`Trying to delete a Task with id=${taskId}. But this id was not found on TaskList state!`);
+                    return;
+                }
+                const tasks = deleteTaskByLocation(this.state.tasks, taskLocation);
+                this.setState({ tasks });
             },
 
             onBlur: _ => {
-                changeTaskPropAndSetState(taskKey, task => {
+                changeTaskPropAndSetState(taskId, task => {
                     task.editable = false;
                     task.selectAllTextOnEdit = true;
+                    return task;
                 })
             },
 
             onClick: _ => {
-                changeTaskPropAndSetState(taskKey, task => task.editable = true)
+                changeTaskPropAndSetState(taskId, task => {
+                    task.editable = true;
+                    return task;
+                })
             }
         };
     }
@@ -119,64 +217,28 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
     /* COMPONENT LOGIC */
 
 
-    public handleNewTaskChange(e : React.FormEvent<HTMLInputElement>) : void {
-        this.setState({ customTaskTitle: e.currentTarget.value });
-    }
-
-    public addRandomTask() : void {
-        this.addTask("Random task title");
+    public handleNewTaskInputChange(e : React.FormEvent<HTMLInputElement>) : void {
+        this.setState({ newTaskTitle: e.currentTarget.value });
     }
 
     public addNewTask(_: React.MouseEvent<HTMLButtonElement>) : void {
-        if (this.state.customTaskTitle.length === 0) { return; }
+        if (this.state.newTaskTitle.length === 0) { return; }
         
-        this.addTask(this.state.customTaskTitle);
+        this.addTask(this.state.newTaskTitle, TaskGroup.TODO);
     }
 
-    public addTask(title: string/*, taskGroup: string*/) : void {
-        // const taskDone = taskGroup === 'done';
-        const newTask = {
-            title,
-            done: true,//taskDone,
-            key: this.state.nextAvailableKey,
-            id: this.state.nextAvailableKey,
-            editable: false,
-            selectAllTextOnEdit: true,
-        };
-        const todoTasks = [newTask].concat(this.state.tasks.done.slice());
-        const tasks = {
-            todo: todoTasks,
-            done: this.state.tasks.done,
-        }
+    public addTask(title: string, taskGroup: TaskGroup) : void {
+        if (title.length === 0) { return; }
+
+        const taskId : number = this.state.nextAvailableId;
+        const isTaskDone : boolean = taskGroup === TaskGroup.DONE;
+
+        const newTask : TaskData = createTask(title, isTaskDone, taskId);
+        const tasks : TaskDataList = insertTask(this.state.tasks, newTask, taskGroup);
 
         this.setState({
             tasks,
-            nextAvailableKey: this.state.nextAvailableKey + 1,
-        });
-    }
-
-    public toggleTasksSelectionTo(showSelection : TaskSelection) : React.MouseEventHandler<HTMLButtonElement> {
-        return (e : React.MouseEvent<HTMLButtonElement>) => {
-            this.setState({ selectedTasksToShow: showSelection })
-        }
-    }
-
-    public prepareTasks(taskStatus : string) : JSX.Element[] {
-        return this.state.tasks[taskStatus].filter((taskData : TaskData) => {
-            switch (this.state.selectedTasksToShow) {
-                case TaskSelection.Done:
-                    return taskData.done;
-                
-                case TaskSelection.Todo:
-                    return !taskData.done;
-
-                case TaskSelection.All:
-                    return true;
-            }
-        })
-        .map((task : TaskData) => {
-            const taskProps : TaskProps = {...task, ...this.taskCallbacks(task.key)};
-            return <Task {...taskProps} />;
+            nextAvailableId: taskId + 1,
         });
     }
 
@@ -184,65 +246,30 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
         e.preventDefault();
     }
 
-    public onDrop(e: React.DragEvent<HTMLDivElement>, taskGroup: string) : void {
-        const { key } = JSON.parse(e.dataTransfer.getData('text/plain'));
-        this.addTaskOnDrop(key, taskGroup)
-    }
+    // Enhance: change string to TaskGroup
+    // public onDrop(e: React.DragEvent<HTMLDivElement>, dropGroup: TaskGroup) : void {
+    public onDrop(e: React.DragEvent<HTMLDivElement>, dropGroup: string) : void {
+        const { id } = JSON.parse(e.dataTransfer.getData('text/plain'));
+        const taskLocation : TaskLocation | null = findTaskById(this.state.tasks, id);
 
-    // TODO change every use of key to id
-    public addTaskOnDrop(key: number, taskGroup: string) : void {
-        const taskDone = taskGroup === 'done';
-        const taskDoneIndex = this.state.tasks.done.findIndex(task => task.key === key);
-        if (taskDone && taskDoneIndex >= 0) return;
-        const taskTodoIndex = this.state.tasks.todo.findIndex(task => task.key === key);
-        if (!taskDone && taskTodoIndex >= 0) return;
-
-        console.log('taskDoneIndex', taskDoneIndex)
-        console.log('taskTodoIndex', taskTodoIndex)
-
-        const taskIndex = Math.max(taskTodoIndex, taskDoneIndex);
-
-        const todo = this.state.tasks.todo;
-        const done = this.state.tasks.done;
-
-        let newTodo : TaskData[];
-        let newDone : TaskData[];
-        const wasTaskTodo = taskDone;
-        if (wasTaskTodo) {
-            newTodo = todo.slice(0, taskIndex).concat(todo.slice(taskIndex + 1, todo.length))
-            const movedTask = todo.slice(taskIndex, taskIndex + 1)[0];
-            const newMovedTaskSlice = [{
-                title: movedTask.title,
-                done: taskDone,
-                key: this.state.nextAvailableKey,
-                id: movedTask.id,
-                editable: false,
-                selectAllTextOnEdit: true,
-            }]
-            newDone = newMovedTaskSlice.concat(done.slice());
-        } else {
-            newDone = done.slice(0, taskIndex).concat(done.slice(taskIndex + 1, done.length))
-            const movedTask = done.slice(taskIndex, taskIndex + 1)[0];
-            const newMovedTaskSlice = [{
-                title: movedTask.title,
-                done: taskDone,
-                key: this.state.nextAvailableKey,
-                id: movedTask.id,
-                editable: false,
-                selectAllTextOnEdit: true,
-            }]
-            newTodo = newMovedTaskSlice.concat(todo.slice());
+        if (taskLocation === null) {
+            console.warn(`Dropped a Task on ${dropGroup} with id=${id}. But this id was not found on TaskList state!`);
+            return;
+        } else if (taskLocation.group === dropGroup) {
+            return;
         }
+        const taskId = this.state.nextAvailableId;
 
-        const tasks = {
-            todo: newTodo,
-            done: newDone,
-        }
+        const oldTask : TaskData = this.state.tasks[taskLocation.group][taskLocation.index];
+        const task : TaskData = createTask(oldTask.title, oldTask.done, taskId);
+
+        const erasedTasks = deleteTaskByLocation(this.state.tasks, taskLocation);
+        const tasks = insertTask(erasedTasks, task, dropGroup);
 
         this.setState({
             tasks,
-            nextAvailableKey: this.state.nextAvailableKey + 1,
-        });
+            nextAvailableId: taskId + 1,
+        })
     }
 
 
@@ -250,28 +277,34 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
     /* RENDER */
 
 
+    public mountTasks() : JSX.Element[] {
+        let elements : JSX.Element[] = [];
+        for (let group in TaskGroup) {
+            const groupElement = (
+                <div key={group} >
+                    <h2>{group}</h2>
+                    <div className={mystyle} onDragOver={this.onDragOver} onDrop={(e : React.DragEvent<HTMLDivElement>) => this.onDrop(e, group)}>
+                        {this.state.tasks[group].map((task : TaskData) => {
+                            const taskProps : TaskProps = {...task, ...this.taskCallbacks(task.id)};
+                            return <Task {...taskProps} />;
+                        })}
+                    </div>
+                </div>
+            );
+            elements.push(groupElement);
+        }
+
+        return elements;
+    }
+
     public render() {
         return (
             <div>
-                <div className={customTaskWrapperStyle}>
-                    <input type="text" onChange={this.handleNewTaskChange}/>
+                <div className={newTaskWrapperStyle}>
+                    <input type="text" onChange={this.handleNewTaskInputChange}/>
                     <button className={css`margin: 10px`} onClick={this.addNewTask}>Add</button>
                 </div>
-                <h2>Todo</h2>
-                <div className={mystyle} onDragOver={this.onDragOver} onDrop={e => this.onDrop(e, 'todo')}>
-                    {this.prepareTasks('todo')}
-                </div>
-                <h2>Done</h2>
-                <div className={mystyle} onDragOver={this.onDragOver} onDrop={e => this.onDrop(e, 'done')}>
-                    {this.prepareTasks('done')}
-                </div>
-                <button onClick={this.addRandomTask}>Add Random Task! :)</button>
-                <div>
-                    {Object.keys(TaskSelection).map( selection => {
-                        return <button key={selection} onClick={this.toggleTasksSelectionTo(TaskSelection[selection])}>{selection}</button>;
-                    })}
-                    <div>Showing {this.state.selectedTasksToShow} tasks.</div>
-                </div>
+                {this.mountTasks()}
             </div>
         )
     }

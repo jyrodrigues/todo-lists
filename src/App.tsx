@@ -92,9 +92,9 @@ class App extends React.Component {
                     <h1 className={myclass}>A list</h1>
                 </header>
                 <AppBody>
-                    <TaskList tasks={genTasks(5)} />
-                    <TaskList tasks={genTasks(2)} />
-                    <TaskList tasks={genTasks(0)} />
+                    <TaskList tasks={{ DONE: genTasks(5), TODO: [] }} />
+                    <TaskList tasks={{ DONE: [], TODO: genTasks(2) }} />
+                    <TaskList tasks={{ DONE: [], TODO: [] }} />
                 </AppBody>
             </div>
         );
