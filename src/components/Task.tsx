@@ -13,6 +13,7 @@ export type TaskData = {
     title: string,
     key: number,
     editable: boolean,
+    selectAllTextOnEdit: boolean,
 }
 
 export type TaskCallbacks = {
@@ -80,7 +81,8 @@ class Task extends React.Component<TaskProps, TaskState> {
     componentDidUpdate() {
         const input = this.titleInputRef.current;
         input && input.focus()
-        input && input.select();
+
+        this.props.selectAllTextOnEdit && input && input.select();
     }
 
     public renderTitle() : JSX.Element {

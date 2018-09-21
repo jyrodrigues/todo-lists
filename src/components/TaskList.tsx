@@ -70,20 +70,24 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
 
 
     public taskCallbacks(taskKey : number) : TaskCallbacks {
-        const changeTaskPropAndSetState = (key : number, propName : string, transformProp : (prop : any) => any) => {
+        const changeTaskPropAndSetState = (key : number, transformTask : (task : TaskData) => void) => {
             const tasks = this.state.tasks.slice();
             const taskIndex = tasks.findIndex(task => task.key === key);
-            tasks[taskIndex][propName] = transformProp(tasks[taskIndex][propName]);
+            transformTask(tasks[taskIndex]);
             this.setState({ tasks });
         }
+
         return {
             onChangeStatus: _ => {
-                changeTaskPropAndSetState(taskKey, 'done', prop => !prop)
+                changeTaskPropAndSetState(taskKey, task => task.done = !task.done)
             },
 
             // TODO make title a component's responsability ?
             onChangeTitle: e => {
-                changeTaskPropAndSetState(taskKey, 'title', _ => e.currentTarget.value)
+                changeTaskPropAndSetState(taskKey, task => {
+                    task.title = e.currentTarget.value;
+                    task.selectAllTextOnEdit = false;
+                })
             },
 
             onDelete: _ => {
@@ -92,11 +96,14 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
             },
 
             onBlur: _ => {
-                changeTaskPropAndSetState(taskKey, 'editable', _ => false)
+                changeTaskPropAndSetState(taskKey, task => {
+                    task.editable = false;
+                    task.selectAllTextOnEdit = true;
+                })
             },
 
             onClick: _ => {
-                changeTaskPropAndSetState(taskKey, 'editable', _ => true)
+                changeTaskPropAndSetState(taskKey, task => task.editable = true)
             }
         };
     }
@@ -126,6 +133,7 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
             done: false,
             key: this.state.nextAvailableKey,
             editable: false,
+            selectAllTextOnEdit: true,
         };
         const tasks = [newTask].concat(this.state.tasks.slice());
 

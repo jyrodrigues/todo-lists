@@ -65,12 +65,14 @@ function genTasks(n: number): TaskData[] {
     const tasks = [];
     for (let i = 0; i < n; i++) {
         const key = i;
-        tasks.push({
+        const newTask : TaskData = {
           done: false,
           title: `Task ${i} means we have to do ${i} things.`,
           key,
-          editable: false
-        });
+          editable: false,
+          selectAllTextOnEdit: true,
+        }
+        tasks.push(newTask);
     }
     return tasks;
 }
