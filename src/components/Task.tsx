@@ -12,6 +12,7 @@ export type TaskData = {
     done: boolean,
     title: string,
     key: number,
+    id: number,
     editable: boolean,
     selectAllTextOnEdit: boolean,
 }
@@ -34,16 +35,18 @@ type TaskWrapperProps = {
     done: boolean,
 }
 
+type TaskWrapperType = StyledOtherComponent<
+    TaskWrapperProps,
+    React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
+    any // := Theme
+>
+
 
 
 /* STYLES */
 
 
-const TaskWrapper : StyledOtherComponent<
-    TaskWrapperProps,
-    React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
-    any // := Theme
-> = styled('div')`
+const TaskWrapper : TaskWrapperType = styled('div')`
     display: block;
     margin: 3px;
     padding: 5px;
@@ -102,9 +105,15 @@ class Task extends React.Component<TaskProps, TaskState> {
         return <span onClick={this.props.onClick}>{this.props.title || '---'}</span>
     }
 
+    public onDragStart(e : React.DragEvent<HTMLDivElement>) {
+        const data = JSON.stringify({ key: this.props.id });
+        e.dataTransfer.setData('text/plain', data);
+        console.log(data);
+    }
+
     public render() {
         return (
-            <TaskWrapper done={this.props.done} >
+            <TaskWrapper draggable onDragStart={this.onDragStart} done={this.props.done} >
                 <input type="checkbox" onChange={this.props.onChangeStatus} defaultChecked={this.props.done}/>
                 {this.renderTitle()}
                 <button onClick={this.props.onDelete}>Del</button>

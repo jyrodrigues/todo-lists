@@ -69,6 +69,7 @@ function genTasks(n: number): TaskData[] {
           done: false,
           title: `Task ${i} means we have to do ${i} things.`,
           key,
+          id: key,
           editable: false,
           selectAllTextOnEdit: true,
         }
@@ -91,7 +92,9 @@ class App extends React.Component {
                     <h1 className={myclass}>A list</h1>
                 </header>
                 <AppBody>
-                    <TaskList tasks={genTasks(4)} />
+                    <TaskList tasks={genTasks(5)} />
+                    <TaskList tasks={genTasks(2)} />
+                    <TaskList tasks={genTasks(0)} />
                 </AppBody>
             </div>
         );

@@ -14,7 +14,10 @@ type TaskListProps = {
 
 
 type TaskListState = {
-    tasks: TaskData[],
+    tasks: {
+        todo: TaskData[],
+        done: TaskData[],
+    },
     nextAvailableKey: number,
     customTaskTitle: string,
     selectedTasksToShow: TaskSelection,
@@ -55,7 +58,10 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
     public constructor(props: any) {
         super(props);
         this.state = {
-            tasks: this.props.tasks || [],
+            tasks: {
+                todo: this.props.tasks || [],
+                done: [],
+            },
             nextAvailableKey: this.props.tasks.length,
             customTaskTitle: '',
             selectedTasksToShow: TaskSelection.All,
@@ -71,10 +77,10 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
 
     public taskCallbacks(taskKey : number) : TaskCallbacks {
         const changeTaskPropAndSetState = (key : number, transformTask : (task : TaskData) => void) => {
-            const tasks = this.state.tasks.slice();
-            const taskIndex = tasks.findIndex(task => task.key === key);
-            transformTask(tasks[taskIndex]);
-            this.setState({ tasks });
+            const todoTasks = this.state.tasks.todo.slice();
+            const taskIndex = todoTasks.findIndex(task => task.key === key);
+            transformTask(todoTasks[taskIndex]);
+            this.setState({ tasks: { todo: todoTasks, done: this.state.tasks.done } });
         }
 
         return {
@@ -91,8 +97,8 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
             },
 
             onDelete: _ => {
-                const tasks = this.state.tasks.filter(task => task.key !== taskKey);
-                this.setState({ tasks });
+                const todoTasks = this.state.tasks.todo.filter(task => task.key !== taskKey);
+                this.setState({ tasks: { todo: todoTasks, done: this.state.tasks.done } });
             },
 
             onBlur: _ => {
@@ -127,31 +133,36 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
         this.addTask(this.state.customTaskTitle);
     }
 
-    public addTask(title: string) : void {
+    public addTask(title: string/*, taskGroup: string*/) : void {
+        // const taskDone = taskGroup === 'done';
         const newTask = {
             title,
-            done: false,
+            done: true,//taskDone,
             key: this.state.nextAvailableKey,
+            id: this.state.nextAvailableKey,
             editable: false,
             selectAllTextOnEdit: true,
         };
-        const tasks = [newTask].concat(this.state.tasks.slice());
+        const todoTasks = [newTask].concat(this.state.tasks.done.slice());
+        const tasks = {
+            todo: todoTasks,
+            done: this.state.tasks.done,
+        }
 
         this.setState({
             tasks,
             nextAvailableKey: this.state.nextAvailableKey + 1,
         });
-
     }
 
-    public toggleTasksSelectionTo (showSelection : TaskSelection) : React.MouseEventHandler<HTMLButtonElement> {
+    public toggleTasksSelectionTo(showSelection : TaskSelection) : React.MouseEventHandler<HTMLButtonElement> {
         return (e : React.MouseEvent<HTMLButtonElement>) => {
             this.setState({ selectedTasksToShow: showSelection })
         }
     }
 
-    public prepareTasks () : JSX.Element[] {
-        return this.state.tasks.filter(taskData => {
+    public prepareTasks(taskStatus : string) : JSX.Element[] {
+        return this.state.tasks[taskStatus].filter((taskData : TaskData) => {
             switch (this.state.selectedTasksToShow) {
                 case TaskSelection.Done:
                     return taskData.done;
@@ -169,6 +180,71 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
         });
     }
 
+    public onDragOver(e: React.DragEvent<HTMLDivElement>) : void {
+        e.preventDefault();
+    }
+
+    public onDrop(e: React.DragEvent<HTMLDivElement>, taskGroup: string) : void {
+        const { key } = JSON.parse(e.dataTransfer.getData('text/plain'));
+        this.addTaskOnDrop(key, taskGroup)
+    }
+
+    // TODO change every use of key to id
+    public addTaskOnDrop(key: number, taskGroup: string) : void {
+        const taskDone = taskGroup === 'done';
+        const taskDoneIndex = this.state.tasks.done.findIndex(task => task.key === key);
+        if (taskDone && taskDoneIndex >= 0) return;
+        const taskTodoIndex = this.state.tasks.todo.findIndex(task => task.key === key);
+        if (!taskDone && taskTodoIndex >= 0) return;
+
+        console.log('taskDoneIndex', taskDoneIndex)
+        console.log('taskTodoIndex', taskTodoIndex)
+
+        const taskIndex = Math.max(taskTodoIndex, taskDoneIndex);
+
+        const todo = this.state.tasks.todo;
+        const done = this.state.tasks.done;
+
+        let newTodo : TaskData[];
+        let newDone : TaskData[];
+        const wasTaskTodo = taskDone;
+        if (wasTaskTodo) {
+            newTodo = todo.slice(0, taskIndex).concat(todo.slice(taskIndex + 1, todo.length))
+            const movedTask = todo.slice(taskIndex, taskIndex + 1)[0];
+            const newMovedTaskSlice = [{
+                title: movedTask.title,
+                done: taskDone,
+                key: this.state.nextAvailableKey,
+                id: movedTask.id,
+                editable: false,
+                selectAllTextOnEdit: true,
+            }]
+            newDone = newMovedTaskSlice.concat(done.slice());
+        } else {
+            newDone = done.slice(0, taskIndex).concat(done.slice(taskIndex + 1, done.length))
+            const movedTask = done.slice(taskIndex, taskIndex + 1)[0];
+            const newMovedTaskSlice = [{
+                title: movedTask.title,
+                done: taskDone,
+                key: this.state.nextAvailableKey,
+                id: movedTask.id,
+                editable: false,
+                selectAllTextOnEdit: true,
+            }]
+            newTodo = newMovedTaskSlice.concat(todo.slice());
+        }
+
+        const tasks = {
+            todo: newTodo,
+            done: newDone,
+        }
+
+        this.setState({
+            tasks,
+            nextAvailableKey: this.state.nextAvailableKey + 1,
+        });
+    }
+
 
 
     /* RENDER */
@@ -181,8 +257,13 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
                     <input type="text" onChange={this.handleNewTaskChange}/>
                     <button className={css`margin: 10px`} onClick={this.addNewTask}>Add</button>
                 </div>
-                <div className={mystyle}>
-                    {this.prepareTasks()}
+                <h2>Todo</h2>
+                <div className={mystyle} onDragOver={this.onDragOver} onDrop={e => this.onDrop(e, 'todo')}>
+                    {this.prepareTasks('todo')}
+                </div>
+                <h2>Done</h2>
+                <div className={mystyle} onDragOver={this.onDragOver} onDrop={e => this.onDrop(e, 'done')}>
+                    {this.prepareTasks('done')}
                 </div>
                 <button onClick={this.addRandomTask}>Add Random Task! :)</button>
                 <div>
