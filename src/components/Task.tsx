@@ -1,6 +1,7 @@
 import { StyledOtherComponent } from 'create-emotion-styled';
 import * as React from 'react';
 import styled, { css } from 'react-emotion';
+import binder from '../binder';
 
 
 
@@ -11,12 +12,15 @@ export type TaskData = {
     done: boolean,
     title: string,
     key: number,
+    editable: boolean,
 }
 
 export type TaskCallbacks = {
     onChangeStatus: (e: React.FormEvent<HTMLInputElement>) => void,
     onChangeTitle: (e: React.FormEvent<HTMLInputElement>) => void,
     onDelete: (e: React.MouseEvent<HTMLButtonElement>) => void,
+    onBlur: (e: React.FocusEvent<HTMLInputElement>) => void,
+    onClick: (e: React.MouseEvent<HTMLSpanElement>) => void,
 }
 
 export type TaskProps
@@ -25,13 +29,17 @@ export type TaskProps
 
 export type TaskState = {};
 
+type TaskWrapperProps = {
+    done: boolean,
+}
+
 
 
 /* STYLES */
 
 
 const TaskWrapper : StyledOtherComponent<
-    TaskProps,
+    TaskWrapperProps,
     React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
     any // := Theme
 > = styled('div')`
@@ -44,7 +52,7 @@ const TaskWrapper : StyledOtherComponent<
     user-select: none;
 
     &:hover {
-        background-color: ${(props : TaskProps) => props.done ? 'rgba(0,255,0,0.1);' : 'rgba(255,0,0,0.1);'}
+        background-color: ${(props : TaskWrapperProps) => props.done ? 'rgba(0,255,0,0.1);' : 'rgba(255,0,0,0.1);'}
         box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
     }
 `;
@@ -59,15 +67,44 @@ const titleStyle = css`
 
 
 class Task extends React.Component<TaskProps, TaskState> {
+    titleInputRef: React.RefObject<HTMLInputElement>;
+
     public constructor(props: TaskProps) {
         super(props);
+
+        this.titleInputRef = React.createRef();
+
+        binder(this);
+    }
+
+    componentDidUpdate() {
+        const input = this.titleInputRef.current;
+        input && input.focus()
+        input && input.select();
+    }
+
+    public renderTitle() : JSX.Element {
+        if (this.props.editable) {
+            return (
+                <input
+                    type="text"
+                    ref={this.titleInputRef}
+                    className={titleStyle}
+                    defaultValue={this.props.title || '---'}
+                    onChange={this.props.onChangeTitle}
+                    onBlur={this.props.onBlur}
+                />
+            );
+        }
+
+        return <span onClick={this.props.onClick}>{this.props.title || '---'}</span>
     }
 
     public render() {
         return (
-            <TaskWrapper {...this.props} >
+            <TaskWrapper done={this.props.done} >
                 <input type="checkbox" onChange={this.props.onChangeStatus} defaultChecked={this.props.done}/>
-                <input className={titleStyle} type="text" onChange={this.props.onChangeTitle} defaultValue={this.props.title}/>
+                {this.renderTitle()}
                 <button onClick={this.props.onDelete}>Del</button>
             </TaskWrapper>
         );

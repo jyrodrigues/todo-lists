@@ -69,6 +69,7 @@ function genTasks(n: number): TaskData[] {
           done: false,
           title: `Task ${i} means we have to do ${i} things.`,
           key,
+          editable: false
         });
     }
     return tasks;

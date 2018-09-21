@@ -70,25 +70,33 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
 
 
     public taskCallbacks(taskKey : number) : TaskCallbacks {
+        const changeTaskPropAndSetState = (key : number, propName : string, transformProp : (prop : any) => any) => {
+            const tasks = this.state.tasks.slice();
+            const taskIndex = tasks.findIndex(task => task.key === key);
+            tasks[taskIndex][propName] = transformProp(tasks[taskIndex][propName]);
+            this.setState({ tasks });
+        }
         return {
             onChangeStatus: _ => {
-                const tasks = this.state.tasks.slice();
-                const taskIndex = tasks.findIndex(task => task.key === taskKey);
-                tasks[taskIndex].done = !tasks[taskIndex].done;
-                this.setState({ tasks });
+                changeTaskPropAndSetState(taskKey, 'done', prop => !prop)
             },
 
             // TODO make title a component's responsability ?
             onChangeTitle: e => {
-                const tasks = this.state.tasks.slice();
-                const taskIndex = tasks.findIndex(task => task.key === taskKey);
-                tasks[taskIndex].title = e.currentTarget.value;
-                this.setState({ tasks });
+                changeTaskPropAndSetState(taskKey, 'title', _ => e.currentTarget.value)
             },
 
             onDelete: _ => {
                 const tasks = this.state.tasks.filter(task => task.key !== taskKey);
                 this.setState({ tasks });
+            },
+
+            onBlur: _ => {
+                changeTaskPropAndSetState(taskKey, 'editable', _ => false)
+            },
+
+            onClick: _ => {
+                changeTaskPropAndSetState(taskKey, 'editable', _ => true)
             }
         };
     }
@@ -117,6 +125,7 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
             title,
             done: false,
             key: this.state.nextAvailableKey,
+            editable: false,
         };
         const tasks = [newTask].concat(this.state.tasks.slice());
 
