@@ -1,29 +1,29 @@
 import * as React from 'react';
 import { css } from 'react-emotion';
 import binder from '../binder';
-import Task, { TaskCallbacks, TaskData, TaskProps } from './Task';
+import Task, { TaskCallbacks, TaskProps } from './Task';
+import {
+    /* Types */
+    TaskData,
+    TaskDataList,
+    TaskGroup,
+    TaskLocation,
+    /* Utilities */
+    createTask,
+    tasksLength,
+    findTaskById,
+    copyTasks,
+    insertTask,
+    deleteTaskByLocation,
+ } from './TaskData';
 
 
 
 /* TYPES */
 
 
-type TaskDataList = {
-    [group in TaskGroup] : TaskData[]
-};
-
-type TaskLocation = {
-    group : string,
-    index : number,
-};
-
 type TaskListProps = {
     tasks: TaskDataList,
-}
-
-enum TaskGroup {
-    TODO = 'TODO',
-    DONE = 'DONE',
 }
 
 type TaskListState = {
@@ -54,81 +54,6 @@ const newTaskWrapperStyle = css`
     border: solid 1px rgba(0,0,0,0.1);
     border-radius: 4px;
 `;
-
-
-
-/* TASKS SPECIFICS */
-// Enhance: put Task type and functions in a separate file
-// Enhance: make it a class?
-// Enhance: make group part of the task data?
-
-
-function createTask(title: string, done: boolean, id: number) {
-    const task : TaskData = {
-        title,
-        done,
-        id,
-        key: id,
-        editable: false,
-        selectAllTextOnEdit: true,
-    }
-
-    return task;
-};
-
-function tasksLength(tasks : TaskDataList) : number {
-    let length = 0;
-    for (let group in TaskGroup) {
-        length += tasks[group].length;
-    }
-    return length;
-}
-
-function copyTasks(givenTasks : TaskDataList) : TaskDataList {
-    // Enhance: is there a better way to initialize it?
-    let tasks : TaskDataList = {
-        DONE: [],
-        TODO: [],
-    };
-
-    for (let group in TaskGroup) {
-        tasks[group] = givenTasks[group].slice();
-    }
-
-    return tasks;
-}
-
-// Enhance: change string to TaskGroup
-// function insertTask(currentTasks : TaskDataList, newTask : TaskData, newTaskGroup : TaskGroup) : TaskDataList {
-function insertTask(currentTasks : TaskDataList, newTask : TaskData, newTaskGroup : string) : TaskDataList {
-    let tasks = copyTasks(currentTasks);
-    tasks[newTaskGroup] = [newTask].concat(tasks[newTaskGroup]);
-
-    return tasks;
-}
-
-function deleteTaskByLocation(currentTasks : TaskDataList, location : TaskLocation) : TaskDataList {
-    let tasks = copyTasks(currentTasks);
-    let group = tasks[location.group];
-    tasks[location.group] = group.splice(0, location.index).concat(group.splice(location.index + 1, group.length));
-
-    return tasks;
-}
-
-// Enhance: change string to TaskGroup
-// function findTaskById(tasks : TaskDataList, id: number) : ({ group : TaskGroup, index : number } | null) {
-function findTaskById(tasks : TaskDataList, id: number) : TaskLocation | null {
-    for (let group in TaskGroup) {
-        const index : number = tasks[group].findIndex((task : TaskData) => task.id === id);
-        if (index >= 0) {
-            return {
-                group,
-                index,
-            }
-        }
-    }
-    return null;
-}
 
 
 
@@ -249,7 +174,7 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
     // Enhance: change string to TaskGroup
     // public onDrop(e: React.DragEvent<HTMLDivElement>, dropGroup: TaskGroup) : void {
     public onDrop(e: React.DragEvent<HTMLDivElement>, dropGroup: string) : void {
-        const { id } = JSON.parse(e.dataTransfer.getData('text/plain'));
+        const { id } = JSON.parse(e.dataTransfer.getData('testando'));
         const taskLocation : TaskLocation | null = findTaskById(this.state.tasks, id);
 
         if (taskLocation === null) {

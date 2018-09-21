@@ -1,6 +1,6 @@
 import * as React from 'react';
 import styled, { css, injectGlobal, keyframes } from 'react-emotion';
-import { TaskData } from './components/Task';
+import { TaskData } from './components/TaskData';
 import TaskList from './components/TaskList';
 import todoIcon from './images/Accomplish-icon.png';
 

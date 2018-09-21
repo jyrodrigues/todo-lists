@@ -2,20 +2,12 @@ import { StyledOtherComponent } from 'create-emotion-styled';
 import * as React from 'react';
 import styled, { css } from 'react-emotion';
 import binder from '../binder';
+import { TaskData } from './TaskData';
 
 
 
 /* TYPES */
 
-
-export type TaskData = {
-    done: boolean,
-    title: string,
-    key: number,
-    id: number,
-    editable: boolean,
-    selectAllTextOnEdit: boolean,
-}
 
 export type TaskCallbacks = {
     onChangeStatus: (e: React.FormEvent<HTMLInputElement>) => void,
@@ -107,8 +99,7 @@ class Task extends React.Component<TaskProps, TaskState> {
 
     public onDragStart(e : React.DragEvent<HTMLDivElement>) {
         const data = JSON.stringify({ id: this.props.id });
-        e.dataTransfer.setData('text/plain', data);
-        console.log(data);
+        e.dataTransfer.setData('testando', data);
     }
 
     public render() {
