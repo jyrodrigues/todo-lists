@@ -3,18 +3,18 @@ import { css } from 'react-emotion';
 import binder from '../binder';
 import Task, { TaskCallbacks, TaskProps } from './Task';
 import {
+    /* Utilities */
+    copyTasks,
+    createTask,
+    deleteTaskByLocation,
+    findTaskById,
+    insertTask,
     /* Types */
     TaskData,
     TaskDataList,
     TaskGroup,
     TaskLocation,
-    /* Utilities */
-    createTask,
     tasksLength,
-    findTaskById,
-    copyTasks,
-    insertTask,
-    deleteTaskByLocation,
  } from './TaskData';
 
 
@@ -27,11 +27,11 @@ type TaskListProps = {
 }
 
 type TaskListState = {
+    newTaskTitle: string,
+    nextAvailableId: number,
     tasks: {
         [group in TaskGroup] : TaskData[]
     },
-    nextAvailableId: number,
-    newTaskTitle: string,
 };
 
 
@@ -65,9 +65,9 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
         super(props);
 
         this.state = {
-            tasks: this.props.tasks,
-            nextAvailableId: tasksLength(this.props.tasks),  // this.props.tasks.TODO.length + this.props.tasks.DONE.length + ...
             newTaskTitle: '',
+            nextAvailableId: tasksLength(this.props.tasks),  // this.props.tasks.TODO.length + this.props.tasks.DONE.length + ...
+            tasks: this.props.tasks,
         }
 
         binder(this);
@@ -162,8 +162,8 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
         const tasks : TaskDataList = insertTask(this.state.tasks, newTask, taskGroup);
 
         this.setState({
-            tasks,
             nextAvailableId: taskId + 1,
+            tasks,
         });
     }
 
@@ -173,7 +173,7 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
 
     // Enhance: change string to TaskGroup
     // public onDrop(e: React.DragEvent<HTMLDivElement>, dropGroup: TaskGroup) : void {
-    public onDrop(e: React.DragEvent<HTMLDivElement>, dropGroup: string) : void {
+    public onDropCallback(e: React.DragEvent<HTMLDivElement>, dropGroup: string) : void {
         const { id } = JSON.parse(e.dataTransfer.getData('testando'));
         const taskLocation : TaskLocation | null = findTaskById(this.state.tasks, id);
 
@@ -192,26 +192,29 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
         const tasks = insertTask(erasedTasks, task, dropGroup);
 
         this.setState({
-            tasks,
             nextAvailableId: taskId + 1,
+            tasks,
         })
     }
 
+    public onDrop(dropGroup : string) {
+        return (e : React.DragEvent<HTMLDivElement>) => this.onDropCallback(e, dropGroup)
+    }
 
 
     /* RENDER */
 
 
     public mountTasks() : JSX.Element[] {
-        let elements : JSX.Element[] = [];
-        for (let group in TaskGroup) {
+        const elements : JSX.Element[] = [];
+        for (const group of Object.keys(TaskGroup)) {
             const groupElement = (
                 <div key={group} >
                     <h2>{group}</h2>
-                    <div className={mystyle} onDragOver={this.onDragOver} onDrop={(e : React.DragEvent<HTMLDivElement>) => this.onDrop(e, group)}>
+                    <div className={mystyle} onDragOver={this.onDragOver} onDrop={this.onDrop(group)}>
                         {this.state.tasks[group].map((task : TaskData) => {
                             const taskProps : TaskProps = {...task, ...this.taskCallbacks(task.id)};
-                            return <Task {...taskProps} />;
+                            return <Task key={taskProps.id} {...taskProps} />;
                         })}
                     </div>
                 </div>

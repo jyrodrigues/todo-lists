@@ -63,7 +63,7 @@ const titleStyle = css`
 
 
 class Task extends React.Component<TaskProps, TaskState> {
-    titleInputRef: React.RefObject<HTMLInputElement>;
+    private titleInputRef: React.RefObject<HTMLInputElement>;
 
     public constructor(props: TaskProps) {
         super(props);
@@ -73,14 +73,28 @@ class Task extends React.Component<TaskProps, TaskState> {
         binder(this);
     }
 
-    componentDidUpdate() {
-        const input = this.titleInputRef.current;
-        input && input.focus()
+    public componentDidUpdate() {
+        const input : HTMLInputElement | null = this.titleInputRef.current;
+        if (input instanceof HTMLInputElement) {
+            input.focus()
 
-        this.props.selectAllTextOnEdit && input && input.select();
+            if (this.props.selectAllTextOnEdit) {
+                input.select();
+            }
+        }
     }
 
-    public renderTitle() : JSX.Element {
+    public render() {
+        return (
+            <TaskWrapper draggable={true} onDragStart={this.onDragStart} done={this.props.done} >
+                <input type="checkbox" onChange={this.props.onChangeStatus} defaultChecked={this.props.done}/>
+                {this.renderTitle()}
+                <button onClick={this.props.onDelete}>Del</button>
+            </TaskWrapper>
+        );
+    }
+
+    private renderTitle() : JSX.Element {
         if (this.props.editable) {
             return (
                 <input
@@ -97,19 +111,9 @@ class Task extends React.Component<TaskProps, TaskState> {
         return <span onClick={this.props.onClick}>{this.props.title || '---'}</span>
     }
 
-    public onDragStart(e : React.DragEvent<HTMLDivElement>) {
+    private onDragStart(e : React.DragEvent<HTMLDivElement>) {
         const data = JSON.stringify({ id: this.props.id });
         e.dataTransfer.setData('testando', data);
-    }
-
-    public render() {
-        return (
-            <TaskWrapper draggable onDragStart={this.onDragStart} done={this.props.done} >
-                <input type="checkbox" onChange={this.props.onChangeStatus} defaultChecked={this.props.done}/>
-                {this.renderTitle()}
-                <button onClick={this.props.onDelete}>Del</button>
-            </TaskWrapper>
-        );
     }
 }
 

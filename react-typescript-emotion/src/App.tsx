@@ -64,14 +64,13 @@ const AppBody = styled('div')`
 function genTasks(n: number): TaskData[] {
     const tasks = [];
     for (let i = 0; i < n; i++) {
-        const key = i;
+        const id = i;
         const newTask : TaskData = {
           done: false,
-          title: `Task ${i} means we have to do ${i} things.`,
-          key,
-          id: key,
           editable: false,
+          id,
           selectAllTextOnEdit: true,
+          title: `Task ${i} means we have to do ${i} things.`,
         }
         tasks.push(newTask);
     }
