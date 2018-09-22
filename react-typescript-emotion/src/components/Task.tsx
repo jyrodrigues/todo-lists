@@ -30,7 +30,7 @@ type TaskWrapperProps = {
 type TaskWrapperType = StyledOtherComponent<
     TaskWrapperProps,
     React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
-    any // := Theme
+    any //:= Theme
 >
 
 
@@ -38,7 +38,7 @@ type TaskWrapperType = StyledOtherComponent<
 /* STYLES */
 
 
-const TaskWrapper : TaskWrapperType = styled('div')`
+const TaskWrapper: TaskWrapperType = styled('div')`
     display: block;
     margin: 3px;
     padding: 5px;
@@ -48,7 +48,7 @@ const TaskWrapper : TaskWrapperType = styled('div')`
     user-select: none;
 
     &:hover {
-        background-color: ${(props : TaskWrapperProps) => props.done ? 'rgba(0,255,0,0.1);' : 'rgba(255,0,0,0.1);'}
+        background-color: ${(props: TaskWrapperProps) => props.done ? 'rgba(0,255,0,0.1);': 'rgba(255,0,0,0.1);'}
         box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
     }
 `;
@@ -74,7 +74,7 @@ class Task extends React.Component<TaskProps, TaskState> {
     }
 
     public componentDidUpdate() {
-        const input : HTMLInputElement | null = this.titleInputRef.current;
+        const input: HTMLInputElement | null = this.titleInputRef.current;
         if (input instanceof HTMLInputElement) {
             input.focus()
 
@@ -94,7 +94,7 @@ class Task extends React.Component<TaskProps, TaskState> {
         );
     }
 
-    private renderTitle() : JSX.Element {
+    private renderTitle(): JSX.Element {
         if (this.props.editable) {
             return (
                 <input
@@ -111,7 +111,7 @@ class Task extends React.Component<TaskProps, TaskState> {
         return <span onClick={this.props.onClick}>{this.props.title || '---'}</span>
     }
 
-    private onDragStart(e : React.DragEvent<HTMLDivElement>) {
+    private onDragStart(e: React.DragEvent<HTMLDivElement>) {
         const data = JSON.stringify({ id: this.props.id });
         e.dataTransfer.setData('testando', data);
     }

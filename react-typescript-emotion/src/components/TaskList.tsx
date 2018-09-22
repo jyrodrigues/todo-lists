@@ -30,7 +30,7 @@ type TaskListState = {
     newTaskTitle: string,
     nextAvailableId: number,
     tasks: {
-        [group in TaskGroup] : TaskData[]
+        [group in TaskGroup]: TaskData[]
     },
 };
 
@@ -78,16 +78,16 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
     /* SUBCOMPONENTS CPI Callbacks */
 
 
-    public taskCallbacks(taskId : number) : TaskCallbacks {
-        const changeTaskPropAndSetState = (id : number, transformTask : ((task : TaskData) => TaskData)) => {
-            const taskLocation : TaskLocation | null = findTaskById(this.state.tasks, id);
+    public taskCallbacks(taskId: number): TaskCallbacks {
+        const changeTaskPropAndSetState = (id: number, transformTask: ((task: TaskData) => TaskData)) => {
+            const taskLocation: TaskLocation | null = findTaskById(this.state.tasks, id);
 
             if (taskLocation === null) {
                 console.warn(`Callback called for a Task with id=${id}. But this id was not found on TaskList state!`);
                 return;
             }
 
-            const tasks : TaskDataList = copyTasks(this.state.tasks);
+            const tasks: TaskDataList = copyTasks(this.state.tasks);
             tasks[taskLocation.group][taskLocation.index] = transformTask(tasks[taskLocation.group][taskLocation.index]);
 
             this.setState({ tasks });
@@ -142,24 +142,24 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
     /* COMPONENT LOGIC */
 
 
-    public handleNewTaskInputChange(e : React.FormEvent<HTMLInputElement>) : void {
+    public handleNewTaskInputChange(e: React.FormEvent<HTMLInputElement>): void {
         this.setState({ newTaskTitle: e.currentTarget.value });
     }
 
-    public addNewTask(_: React.MouseEvent<HTMLButtonElement>) : void {
+    public addNewTask(_: React.MouseEvent<HTMLButtonElement>): void {
         if (this.state.newTaskTitle.length === 0) { return; }
         
         this.addTask(this.state.newTaskTitle, TaskGroup.TODO);
     }
 
-    public addTask(title: string, taskGroup: TaskGroup) : void {
+    public addTask(title: string, taskGroup: TaskGroup): void {
         if (title.length === 0) { return; }
 
-        const taskId : number = this.state.nextAvailableId;
-        const isTaskDone : boolean = taskGroup === TaskGroup.DONE;
+        const taskId: number = this.state.nextAvailableId;
+        const isTaskDone: boolean = taskGroup === TaskGroup.DONE;
 
-        const newTask : TaskData = createTask(title, isTaskDone, taskId);
-        const tasks : TaskDataList = insertTask(this.state.tasks, newTask, taskGroup);
+        const newTask: TaskData = createTask(title, isTaskDone, taskId);
+        const tasks: TaskDataList = insertTask(this.state.tasks, newTask, taskGroup);
 
         this.setState({
             nextAvailableId: taskId + 1,
@@ -167,15 +167,13 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
         });
     }
 
-    public onDragOver(e: React.DragEvent<HTMLDivElement>) : void {
+    public onDragOver(e: React.DragEvent<HTMLDivElement>): void {
         e.preventDefault();
     }
 
-    // Enhance: change string to TaskGroup
-    // public onDrop(e: React.DragEvent<HTMLDivElement>, dropGroup: TaskGroup) : void {
-    public onDropCallback(e: React.DragEvent<HTMLDivElement>, dropGroup: string) : void {
+    public onDropCallback(e: React.DragEvent<HTMLDivElement>, dropGroup: TaskGroup): void {
         const { id } = JSON.parse(e.dataTransfer.getData('testando'));
-        const taskLocation : TaskLocation | null = findTaskById(this.state.tasks, id);
+        const taskLocation: TaskLocation | null = findTaskById(this.state.tasks, id);
 
         if (taskLocation === null) {
             console.warn(`Dropped a Task on ${dropGroup} with id=${id}. But this id was not found on TaskList state!`);
@@ -185,8 +183,8 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
         }
         const taskId = this.state.nextAvailableId;
 
-        const oldTask : TaskData = this.state.tasks[taskLocation.group][taskLocation.index];
-        const task : TaskData = createTask(oldTask.title, oldTask.done, taskId);
+        const oldTask: TaskData = this.state.tasks[taskLocation.group][taskLocation.index];
+        const task: TaskData = createTask(oldTask.title, oldTask.done, taskId);
 
         const erasedTasks = deleteTaskByLocation(this.state.tasks, taskLocation);
         const tasks = insertTask(erasedTasks, task, dropGroup);
@@ -197,23 +195,24 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
         })
     }
 
-    public onDrop(dropGroup : string) {
-        return (e : React.DragEvent<HTMLDivElement>) => this.onDropCallback(e, dropGroup)
+    public onDrop(dropGroup: TaskGroup) {
+        return (e: React.DragEvent<HTMLDivElement>) => this.onDropCallback(e, dropGroup)
     }
 
 
     /* RENDER */
 
 
-    public mountTasks() : JSX.Element[] {
-        const elements : JSX.Element[] = [];
-        for (const group of Object.keys(TaskGroup)) {
+    public mountTasks(): JSX.Element[] {
+        const elements: JSX.Element[] = [];
+        for (const groupKey of Object.keys(TaskGroup)) {
+            const group: TaskGroup = TaskGroup[groupKey];
             const groupElement = (
-                <div key={group} >
+                <div key={group} className={css``}>
                     <h2>{group}</h2>
                     <div className={mystyle} onDragOver={this.onDragOver} onDrop={this.onDrop(group)}>
-                        {this.state.tasks[group].map((task : TaskData) => {
-                            const taskProps : TaskProps = {...task, ...this.taskCallbacks(task.id)};
+                        {this.state.tasks[group].map((task: TaskData) => {
+                            const taskProps: TaskProps = {...task, ...this.taskCallbacks(task.id)};
                             return <Task key={taskProps.id} {...taskProps} />;
                         })}
                     </div>
@@ -227,12 +226,19 @@ class TaskList extends React.Component<TaskListProps, TaskListState> {
 
     public render() {
         return (
-            <div>
+            <div className={css`width: 100%`}>
                 <div className={newTaskWrapperStyle}>
                     <input type="text" onChange={this.handleNewTaskInputChange}/>
                     <button className={css`margin: 10px`} onClick={this.addNewTask}>Add</button>
                 </div>
-                {this.mountTasks()}
+                <div className={css`
+                    width: 100%;
+                    display: flex;
+                    justify-content: space-evenly;
+                    flex-wrap: wrap;
+                `}>
+                    {this.mountTasks()}
+                </div>
             </div>
         )
     }

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import styled, { css, injectGlobal, keyframes } from 'react-emotion';
-import { TaskData } from './components/TaskData';
+import { createEmptyTaskList, TaskData, TaskDataList } from './components/TaskData';
 import TaskList from './components/TaskList';
 import todoIcon from './images/Accomplish-icon.png';
 
@@ -61,19 +61,23 @@ const AppBody = styled('div')`
 /* AUX FUNCTIONS */
 
 
-function genTasks(n: number): TaskData[] {
-    const tasks = [];
+function genTodoTasks(n: number): TaskDataList {
+    const todoTasks = [];
     for (let i = 0; i < n; i++) {
         const id = i;
-        const newTask : TaskData = {
+        const newTask: TaskData = {
           done: false,
           editable: false,
           id,
           selectAllTextOnEdit: true,
           title: `Task ${i} means we have to do ${i} things.`,
         }
-        tasks.push(newTask);
+        todoTasks.push(newTask);
     }
+
+    const tasks: TaskDataList = createEmptyTaskList();
+    tasks.TODO = todoTasks;
+
     return tasks;
 }
 
@@ -91,9 +95,7 @@ class App extends React.Component {
                     <h1 className={myclass}>A list</h1>
                 </header>
                 <AppBody>
-                    <TaskList tasks={{ DONE: genTasks(5), TODO: [] }} />
-                    <TaskList tasks={{ DONE: [], TODO: genTasks(2) }} />
-                    <TaskList tasks={{ DONE: [], TODO: [] }} />
+                    <TaskList tasks={genTodoTasks(5)} />
                 </AppBody>
             </div>
         );

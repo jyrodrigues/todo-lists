@@ -1,5 +1,3 @@
-
-
 export type TaskData = {
     done: boolean,
     editable: boolean,
@@ -8,19 +6,20 @@ export type TaskData = {
     title: string,
 }
 
-export type TaskDataList = {
-    [group in TaskGroup] : TaskData[]
-};
-
-export type TaskLocation = {
-    group : string,
-    index : number,
-};
-
 export enum TaskGroup {
     DONE = 'DONE',
     TODO = 'TODO',
+    WIP = 'WIP',
 }
+
+export type TaskDataList = {
+    [group in TaskGroup]: TaskData[]
+};
+
+export type TaskLocation = {
+    group: TaskGroup,
+    index: number,
+};
 
 
 
@@ -30,7 +29,7 @@ export enum TaskGroup {
 
 
 export function createTask(title: string, done: boolean, id: number) {
-    const task : TaskData = {
+    const task: TaskData = {
         done,
         editable: false,
         id,
@@ -41,7 +40,17 @@ export function createTask(title: string, done: boolean, id: number) {
     return task;
 };
 
-export function tasksLength(tasks : TaskDataList) : number {
+export function createEmptyTaskList(): TaskDataList {
+    const emptyTaskList: any = {};
+    for (const groupKey of Object.keys(TaskGroup)) {
+        const group: TaskGroup = TaskGroup[groupKey];
+        emptyTaskList[group] = [];
+    }
+
+    return emptyTaskList;
+}
+
+export function tasksLength(tasks: TaskDataList): number {
     let length = 0;
     for (const group of Object.keys(TaskGroup)) {
         length += tasks[group].length;
@@ -49,11 +58,10 @@ export function tasksLength(tasks : TaskDataList) : number {
     return length;
 }
 
-// Enhance: change string to TaskGroup
-// export function findTaskById(tasks : TaskDataList, id: number) : ({ group : TaskGroup, index : number } | null) {
-export function findTaskById(tasks : TaskDataList, id: number) : TaskLocation | null {
-    for (const group of Object.keys(TaskGroup)) {
-        const index : number = tasks[group].findIndex((task : TaskData) => task.id === id);
+export function findTaskById(tasks: TaskDataList, id: number): TaskLocation | null {
+    for (const groupKey of Object.keys(TaskGroup)) {
+        const group: TaskGroup = TaskGroup[groupKey];
+        const index: number = tasks[group].findIndex((task: TaskData) => task.id === id);
         if (index >= 0) {
             return {
                 group,
@@ -64,13 +72,8 @@ export function findTaskById(tasks : TaskDataList, id: number) : TaskLocation | 
     return null;
 }
 
-export function copyTasks(givenTasks : TaskDataList) : TaskDataList {
-    // Enhance: is there a better way to initialize it?
-    const tasks : TaskDataList = {
-        DONE: [],
-        TODO: [],
-    };
-
+export function copyTasks(givenTasks: TaskDataList): TaskDataList {
+    const tasks: TaskDataList = createEmptyTaskList();
     for (const group of Object.keys(TaskGroup)) {
         tasks[group] = givenTasks[group].slice();
     }
@@ -78,19 +81,17 @@ export function copyTasks(givenTasks : TaskDataList) : TaskDataList {
     return tasks;
 }
 
-// Enhance: change string to TaskGroup
-// export function insertTask(currentTasks : TaskDataList, newTask : TaskData, newTaskGroup : TaskGroup) : TaskDataList {
-export function insertTask(currentTasks : TaskDataList, newTask : TaskData, newTaskGroup : string) : TaskDataList {
+export function insertTask(currentTasks: TaskDataList, newTask: TaskData, newTaskGroup: TaskGroup): TaskDataList {
     const tasks = copyTasks(currentTasks);
     tasks[newTaskGroup] = [newTask].concat(tasks[newTaskGroup]);
 
     return tasks;
 }
 
-export function deleteTaskByLocation(currentTasks : TaskDataList, location : TaskLocation) : TaskDataList {
+export function deleteTaskByLocation(currentTasks: TaskDataList, location: TaskLocation): TaskDataList {
     const tasks = copyTasks(currentTasks);
     const group = tasks[location.group];
-    tasks[location.group] = group.splice(0, location.index).concat(group.splice(location.index + 1, group.length));
+    tasks[location.group] = group.slice(0, location.index).concat(group.slice(location.index + 1, group.length));
 
     return tasks;
 }
