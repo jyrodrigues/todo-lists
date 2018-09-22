@@ -30,7 +30,7 @@ type TaskWrapperProps = {
 type TaskWrapperType = StyledOtherComponent<
     TaskWrapperProps,
     React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
-    any //:= Theme
+    any // := Theme
 >
 
 
@@ -46,9 +46,9 @@ const TaskWrapper: TaskWrapperType = styled('div')`
     border-radius: 3px;
     cursor: pointer;
     user-select: none;
+    background-color: ${(props: TaskWrapperProps) => props.done ? 'rgba(0,255,0,0.1);': 'rgba(255,0,0,0.1);'}
 
     &:hover {
-        background-color: ${(props: TaskWrapperProps) => props.done ? 'rgba(0,255,0,0.1);': 'rgba(255,0,0,0.1);'}
         box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
     }
 `;
